@@ -1,0 +1,4 @@
+template_path: elb-to-ec2-target-group-cf-template.yaml
+stack_name: elb-to-ec2-target-group
+parameters:
+  SSHKeyName: prod-key
