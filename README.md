@@ -1,3 +1,7 @@
+# Note
+
+Requires adding `prod-key` EC2 SSH key and manual DNS verification of ACM cert during certificate stack building.
+
 # aws-elb-to-ec2-target-group-cf-template
 [![Build Status](https://travis-ci.org/getcft/aws-elb-to-ec2-target-group-cf-template.svg?branch=master)](https://travis-ci.org/getcft/aws-elb-to-ec2-target-group-cf-template)
 

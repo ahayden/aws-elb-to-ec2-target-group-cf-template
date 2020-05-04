@@ -1,0 +1,4 @@
+template_path: certificate.yaml
+stack_name: domain
+parameters:
+  DomainName: example.com
