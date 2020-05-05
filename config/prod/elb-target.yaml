@@ -1,0 +1,8 @@
+template_path: elb-target.yaml
+stack_name: elb-target
+dependencies:
+  - "prod/certificate.yaml"
+  - "prod/iam-ec2.yaml"
+parameters:
+  SSHKeyName: prod-key
+  DomainName: !ssm DefaultDomainName

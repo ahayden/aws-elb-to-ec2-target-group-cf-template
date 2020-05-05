@@ -1,35 +1,31 @@
+# Setting up a certificate requires a manual step to enter the DNS Validation on godaddy.
+Description: Setup an ACM Certificate
 AWSTemplateFormatVersion: 2010-09-09
-Description: Creates a certificate for manual dns verification
-
 Parameters:
-
-    DomainName:
-        Description: 'FQDN for certificate'
-        Type: String
-
+  DomainName:
+    Description: Domain name
+    Type: String
+  SubDomainName:
+    Description: Sub-domain name
+    Type: String
+    Default: "*" #default to wildcard cert
 Resources:
-
-    Certificate:
-      Type: AWS::CertificateManager::Certificate
-      Properties:
-        DomainName: 
-          Ref: DomainName
-        DomainValidationOptions:
-          - DomainName: 
-              Ref: DomainName
-            ValidationDomain: 
-              Ref: DomainName
-        SubjectAlternativeNames:
-          - !Join
-            - '.' 
-            - - '*' # wildcard for subdomains
-              - !Ref DomainName 
-        ValidationMethod: DNS
-
+  Certificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Join
+        - '.'
+        - - !Ref SubDomainName
+          - !Ref DomainName
+      DomainValidationOptions:
+        - DomainName: !Join
+            - '.'
+            - - !Ref SubDomainName
+              - !Ref DomainName
+          ValidationDomain: !Ref DomainName
+      ValidationMethod: "DNS"
 Outputs:
-
-    CertificateArn:
-        Description: 'ARN of certificate to attach to domain'
-        Value: !Ref Certificate
-        Export:
-          Name: !Sub '${AWS::Region}-${AWS::StackName}-CertificateArn'
+  CertificateArn:
+    Value: !Ref Certificate
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-CertificateArn'

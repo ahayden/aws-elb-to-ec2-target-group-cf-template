@@ -20,19 +20,23 @@ Parameters:
     SSHKeyName:
         Description: 'Name of the ec2 key you need one to use this template'
         Type: 'AWS::EC2::KeyPair::KeyName'
-        Default: 'choose-key'
+
+    DomainName:
+        Description: 'Domain or sub domain string to register new record'
+        Type: String
 
 Mappings:
 
     RegionToAmazonAMI:
         us-east-1:
-            HVM64: ami-09479453c5cde9639
+            HVM64: ami-0ff8a91507f77f867 #ami-09479453c5cde9639
         us-east-2:
-            HVM64: ami-023c8dbf8268fb3ca
+            HVM64: ami-0b59bfac6be064b78 #ami-023c8dbf8268fb3ca
         us-west-1:
-            HVM64: ami-06ff511fea5db2c99
+            HVM64: ami-0bdb828fd58c52235 #ami-06ff511fea5db2c99
         us-west-2:
-            HVM64: ami-0bb5806b2e825a199
+#           HVM64: ami-a0cfeed8 #ami-0bb5806b2e825a199
+            HVM64: ami-071583c78290dbd42 #my ami id
 
     NetworkToSubnet:
         "10.0.0.0":
@@ -280,8 +284,8 @@ Resources:
                   ToPort: 22
                   CidrIp: 0.0.0.0/0
                 - IpProtocol: tcp
-                  FromPort: 80
-                  ToPort: 80
+                  FromPort: 443 #mod 80
+                  ToPort: 443 #mod 80
                   SourceSecurityGroupId:
                       Ref: ELBSecurityGroup
 
@@ -294,12 +298,12 @@ Resources:
               Ref: VPC
             SecurityGroupIngress:
                 - IpProtocol: tcp
-                  FromPort: 80
-                  ToPort: 80
+                  FromPort: 443 #mod 80
+                  ToPort: 443 #mod 80
                   CidrIp: 0.0.0.0/0
 
     # Linux Instance with Apache running on Port 80
-    AmazonLinuxInstance:
+    LinuxInstance:
       Type: AWS::EC2::Instance
       Properties:
         ImageId:
@@ -309,6 +313,9 @@ Resources:
             - HVM64
         InstanceInitiatedShutdownBehavior: stop
         InstanceType: t2.nano
+        IamInstanceProfile: 
+          Fn::ImportValue:
+            !Sub '${AWS::Region}-iam-ec2-ManagedInstanceProfile'
         KeyName:
           Ref: SSHKeyName
         Monitoring: 'true'
@@ -320,18 +327,13 @@ Resources:
           SubnetId:
             Ref: PubSubnetZoneA
         Tenancy: default
-        UserData:
+        UserData: #install apache HTTP server and nginx HTTPS proxy
           Fn::Base64: !Sub |
             #!/bin/bash -xe
-            cd /tmp
-            yum update -y
-            yum install -y httpd24
-            echo "Healthy" > /var/www/html/index.html
-            service httpd start
             /opt/aws/bin/cfn-signal \
               -e $? \
               --stack ${AWS::StackName} \
-              --resource AmazonLinuxInstance \
+              --resource LinuxInstance \
               --region ${AWS::Region}
 
     # Target Group
@@ -345,15 +347,15 @@ Resources:
         Matcher:
           HttpCode: '200'
         Name: EC2TargetGroup
-        Port: 80
-        Protocol: HTTP
+        Port: 443 #mod 80
+        Protocol: HTTPS #mod HTTP
         TargetGroupAttributes:
         - Key: deregistration_delay.timeout_seconds
           Value: '20'
         Targets:
         - Id:
-            Ref: AmazonLinuxInstance
-          Port: 80
+            Ref: LinuxInstance
+          Port: 443  #mod 80
         UnhealthyThresholdCount: 3
         VpcId:
           Ref: 'VPC'
@@ -373,8 +375,12 @@ Resources:
               Ref: EC2TargetGroup
         LoadBalancerArn:
             Ref: ApplicationLoadBalancer
-        Port: 80
-        Protocol: HTTP
+        Port: 443 #mod 80
+        Protocol: HTTPS #mod HTTP
+        Certificates:
+          - CertificateArn: 
+              Fn::ImportValue:
+                !Sub '${AWS::Region}-domain-CertificateArn'
     ApplicationLoadBalancer:
       Type: AWS::ElasticLoadBalancingV2::LoadBalancer
       Properties:
@@ -384,6 +390,15 @@ Resources:
         - Ref: PubSubnetZoneB
         SecurityGroups:
         - Ref: ELBSecurityGroup
+    ConnectDNSRecord:
+      Type: AWS::Route53::RecordSet
+      Properties:
+        HostedZoneName: !Sub '${DomainName}.'
+        Name: !Join ['', [!Ref LinuxInstance, ., !Ref DomainName, .]]
+        Type: CNAME
+        TTL: '900'
+        ResourceRecords:
+        - !GetAtt ApplicationLoadBalancer.DNSName
 
 Outputs:
 
@@ -398,7 +413,7 @@ Outputs:
     EC2Instance:
         Description: 'EC2 Instance'
         Value:
-          Ref: AmazonLinuxInstance
+          Ref: LinuxInstance
     EC2TargetGroup:
         Description: 'EC2 Target Group'
         Value:
@@ -407,3 +422,12 @@ Outputs:
         Description: 'Application Load Balancer'
         Value:
           Ref: ApplicationLoadBalancer
+    ConnectionURI: #make this ConnectDNSRecord
+        Description: 'Hosted target'
+        Value:
+          !Join
+          - ''
+          - - https://
+            - Fn::GetAtt:
+              - ApplicationLoadBalancer
+              - DNSName

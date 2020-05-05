@@ -1,6 +1,0 @@
-template_path: elb-to-ec2-target-group-cf-template.yaml
-stack_name: environment
-dependencies:
-  - "prod/certificate.yaml"
-parameters:
-  SSHKeyName: prod-key

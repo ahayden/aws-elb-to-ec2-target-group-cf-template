@@ -1,0 +1,2 @@
+template_path: iam-ec2.yaml
+stack_name: iam-ec2
