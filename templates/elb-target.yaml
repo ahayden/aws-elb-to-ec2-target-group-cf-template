@@ -17,9 +17,9 @@ Description: Creates a VPC and a ELB with a EC2 Target Group Associated
 
 Parameters:
 
-    SSHKeyName:
-        Description: 'Name of the ec2 key you need one to use this template'
-        Type: 'AWS::EC2::KeyPair::KeyName'
+#   SSHKeyName:
+#       Description: 'Name of the ec2 key you need one to use this template'
+#       Type: 'AWS::EC2::KeyPair::KeyName'
 
     DomainName:
         Description: 'Domain or sub domain string to register new record'
@@ -29,14 +29,14 @@ Mappings:
 
     RegionToAmazonAMI:
         us-east-1:
-            HVM64: ami-0ff8a91507f77f867 #ami-09479453c5cde9639
+#           HVM64: ami-0ff8a91507f77f867 #ami-09479453c5cde9639
+            HVM64: ami-03e9c0a3d0a514f7f #my ami id
         us-east-2:
             HVM64: ami-0b59bfac6be064b78 #ami-023c8dbf8268fb3ca
         us-west-1:
             HVM64: ami-0bdb828fd58c52235 #ami-06ff511fea5db2c99
         us-west-2:
-#           HVM64: ami-a0cfeed8 #ami-0bb5806b2e825a199
-            HVM64: ami-071583c78290dbd42 #my ami id
+            HVM64: ami-a0cfeed8 #ami-0bb5806b2e825a199
 
     NetworkToSubnet:
         "10.0.0.0":
@@ -316,8 +316,8 @@ Resources:
         IamInstanceProfile: 
           Fn::ImportValue:
             !Sub '${AWS::Region}-iam-ec2-ManagedInstanceProfile'
-        KeyName:
-          Ref: SSHKeyName
+#       KeyName:
+#         Ref: SSHKeyName
         Monitoring: 'true'
         NetworkInterfaces:
         - AssociatePublicIpAddress: 'true'

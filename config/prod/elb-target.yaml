@@ -4,5 +4,5 @@ dependencies:
   - "prod/certificate.yaml"
   - "prod/iam-ec2.yaml"
 parameters:
-  SSHKeyName: prod-key
+# SSHKeyName: prod-key
   DomainName: !ssm DefaultDomainName
